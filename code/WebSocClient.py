@@ -64,7 +64,7 @@ class Client(object):
                             # print(self.channelIdVal)
                     else:
                         # print(message)
-                        BitfinexData(message)
+                        BitfinexData(message, self.channelIdVal)
                         # pass
                 elif self.mode == 2:
                     pass
@@ -104,19 +104,49 @@ class Client(object):
 
 
 class BitfinexData(object):
-    def __init__(self, data):
+    def __init__(self, data, channelIdVal):
         self.data = data
+        self.channelIdVal = channelIdVal
+        self.url = "ws://localhost:8888/noble-markets-realtime-order-book"
         self.ioloop = IOLoop()
         self.parseData()
-        # self.ioloop.start()
-
+        self.ioloop.start()
+# self.channelIdVal[self.data[0]]
     @gen.coroutine
     def parseData(self):
         # pass
-        r = requests.get('http://localhost:8888/noble-markets-order-book-snapshot', json={"payload": self.data})
+        self.payload = {
+            'place': "bitfinex",
+            'chanId':self.channelIdVal[self.data[0]],
+            'data': self.data[1]
+        }
+
+        print ("Establishing connection to "+self.url)
+        try:
+            self.ws = yield websocket_connect(self.url)
+        except:
+            print ("connection error "+self.url)
+        else:
+            print ("connected to "+self.url)
+            self.ws.write_message(json.dumps(self.payload))
+            self.ws.close()
+            # self.ioloop.stop()
+
+        # # print(jay[1])
+        # # data = {
+        # #     'payload[]': jay[1],
+        # #     'chanId' : jay[0]
+        # # }
+        # # print(jay[1])
+        # payload = {'chanId': jay[1][0] 
+        #    # 'favefood': ['raw donuts', 'free donuts']
+        # }
+        # r = requests.post('http://localhost:8888/noble-markets-order-book-snapshot', data=jay[1][0], contentType= 'application/x-www-form-urlencoded')
+        # print(jay[1][0])
         # print ("Sending the data Data.....")
         # print(self.data)
         # client = Client("ws://localhost:8888/noble-markets-realtime-order-book", 5, 0)
+
         # self.ioloop.stop()
 
 

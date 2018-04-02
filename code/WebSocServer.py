@@ -12,6 +12,7 @@ from tornado.concurrent import Future
 from tornado import web, websocket
 from tornado.options import define, options, parse_command_line
 from threading import Thread
+import json
 
 define("port", default=8888, help="run on the given port", type=int)
 
@@ -45,19 +46,38 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
 class SendSnapshot(tornado.web.RequestHandler):
     @web.asynchronous
     def get(self):
-        print("This is the snapshot data")
-        self.write("Inside snapshot data")
-        self.finish()
-        # self.render("Hello World")
+    	pass
+        # print("This is the snapshot data")
+        # self.write("Inside snapshot data")
+        # # self.finish()
+        # # self.render("Hello World")
+        # # self.finish()
+        # # id = self.get_argument("id")
+        # # chanId = self.get_argument('data')
+        # # # payload = self.get_argument("payload")
+        # # payload = json.dumps(chanId)
+        # # # chanId = value[0]
+        # # data = value[1]
+        # # self.payload =  self.get_argument("payload[]")
+        # # print(self.payload)
+        # # print(self.get_argument("chanId"))
+        # print("\n")
         # self.finish()
-        # id = self.get_argument("id")
-        value = self.get_argument("body")
-        print(value)
+        # print(payload)
+        # flat_list = [for item in payload]
+        # for item in payload:
+        #     print(item)
+        # self.finish()
         # data = {"id": id, "value" : value}
         # data = json.dumps(data)
         # for c in cl:
         #     c.write_message(data)
-
+    def post(self):
+        chanId = self.get_argument("chanId")
+        # passwd = self.get_argument("password")
+        print(chanId)
+        self.finish()
+        # self.write("Your username is %s and password is %s" % (user, passwd))
 
 
 def main():
