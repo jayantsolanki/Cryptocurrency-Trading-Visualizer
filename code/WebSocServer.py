@@ -20,7 +20,9 @@ class HomePage(tornado.web.RequestHandler):
     @web.asynchronous
     def get(self):
         # self.render("index.html")
+        self.write("Hello World")
         print("This will be the main page")
+        self.finish()
 
 
 class SendRealTimeUpdates(websocket.WebSocketHandler):
@@ -28,22 +30,29 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
         return True
 
     def open(self):
-        if self not in cl:
-            cl.append(self)
+        logging.info("A client connected.")
 
     def on_close(self):
-        if self in cl:
-            cl.remove(self)
+        logging.info("A client disconnected.")
+    def on_message(self, message):
+        logging.info("message: {}".format(message))
+    # def get(self):
+    #     print("This is the snapshot data")
+    #     self.write("Inside snapshot data")
+    #     self.finish()
 
 
 class SendSnapshot(tornado.web.RequestHandler):
     @web.asynchronous
     def get(self):
         print("This is the snapshot data")
+        self.write("Inside snapshot data")
+        self.finish()
         # self.render("Hello World")
         # self.finish()
         # id = self.get_argument("id")
-        # value = self.get_argument("value")
+        value = self.get_argument("body")
+        print(value)
         # data = {"id": id, "value" : value}
         # data = json.dumps(data)
         # for c in cl:
@@ -78,4 +87,6 @@ if __name__ == "__main__":
     thread2.start()
     thread3.start()
     thread.join()
+    thread2.join()
+    thread3.join()
     # main()

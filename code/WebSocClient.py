@@ -35,6 +35,10 @@ class Client(object):
             elif self.mode==2:
                 # self.gdaxSubscribe()
                 pass
+            # elif self.mode==0:
+            #     print ("you have entered the dungeon, exit now!!!!")
+            #     self.ioloop.stop()
+
             else:
                 pass
 
@@ -43,21 +47,25 @@ class Client(object):
     def run(self):
         while True:#look for new messages
             msg = yield self.ws.read_message()
-            message = json.loads(msg)
             if msg is None:
                 print ("connection closed for "+self.url)
                 self.ws = None
                 break
             else:
+                message = json.loads(msg)#converting the response into json
                 if self.mode == 1:
                     # msgs for bitfinex
                     if 'event' in message:
-                        # self.channelIdVal[message['chaId']] = message['pair']
-                        print(message)
-                        # print(message['chaId'])
-                        # print(message['pair'])
+                        if message['event'] == "subscribed":
+                            # print(message)
+                            # print(message['chanId'])
+                            # print(message['pair'])
+                            self.channelIdVal[message['chanId']] = message['pair']
+                            # print(self.channelIdVal)
                     else:
-                        print(message)
+                        # print(message)
+                        BitfinexData(message)
+                        # pass
                 elif self.mode == 2:
                     pass
 
@@ -75,7 +83,7 @@ class Client(object):
             request['prec'] = "P1"
             request['freq'] = "F1"
             json_request = json.dumps(request)
-            print(json_request)
+            # print(json_request)
             self.ws.write_message(json_request)
 
 
@@ -93,6 +101,25 @@ class Client(object):
         else:
             pass
             # self.ws.write_message("keep alive")#check this part of the code for heartbeat or use pass
+
+
+class BitfinexData(object):
+    def __init__(self, data):
+        self.data = data
+        self.ioloop = IOLoop()
+        self.parseData()
+        # self.ioloop.start()
+
+    @gen.coroutine
+    def parseData(self):
+        # pass
+        r = requests.get('http://localhost:8888/noble-markets-order-book-snapshot', json={"payload": self.data})
+        # print ("Sending the data Data.....")
+        # print(self.data)
+        # client = Client("ws://localhost:8888/noble-markets-realtime-order-book", 5, 0)
+        # self.ioloop.stop()
+
+
 
 # if __name__ == "__main__":
     # client = Client("wss://api.bitfinex.com/ws", 5, 1)
