@@ -5,6 +5,7 @@ from tornado import gen
 from tornado.websocket import websocket_connect
 import json
 import requests
+import sys
 
 
 class Client(object):
@@ -44,11 +45,11 @@ class Client(object):
             self.run()
             # code for subscribing goes here
             if self.mode==1:
-                # self.bitfinexSubscribe()#comment this line for debugging
-                pass
-            elif self.mode==2:
-                self.gdaxSubscribe()
+                self.bitfinexSubscribe()#comment this line for debugging
                 # pass
+            elif self.mode==2:
+                # self.gdaxSubscribe()
+                pass
             # elif self.mode==0:
             #     print ("you have entered the dungeon, exit now!!!!")
             #     self.ioloop.stop()
@@ -71,11 +72,7 @@ class Client(object):
                     # msgs for bitfinex
                     if 'event' in message:
                         if message['event'] == "subscribed":
-                            # print(message)
-                            # print(message['chanId'])
-                            # print(message['pair'])
-                            self.channelIdVal[message['chanId']] = message['pair']
-                            # print(self.channelIdVal)
+                            self.channelIdVal[message['chanId']] = message['pair'] # storing the mapping for pair with its channel id
                     else:
                         # print(message)
                         MSG = yield self.WS.read_message()
@@ -84,11 +81,18 @@ class Client(object):
                             self.connectLocal()
                         else:
                             BitfinexData(message, self.channelIdVal, self.WS)
-                            # pass #discard that message, badluck
-                        # pass
                 elif self.mode == 2:#for GDAX
-                    print(message)
-                    # pass
+                    # if 'product_id' in message:
+                    # MSG = yield self.WS.read_message()
+                    # print(message)
+                    # if MSG is None:#can be replaced by while loop
+                    #     print ("connection closed for "+self.URL+ " trying again")
+                    #     print("I m inside")
+                    #     self.connectLocal()
+                    # else:
+                    #     # pass
+                    GdaxData(message, self.WS)
+                    # print(message)
 
 
     def bitfinexSubscribe(self):
@@ -109,27 +113,19 @@ class Client(object):
 
 
     def gdaxSubscribe(self):
-        # requestArticles = requests.get("https://api.bitfinex.com/v1/symbols")#fetching all the active pairs
-        # pairs = requestArticles.json()
-        # print(pairs)
-        # {
-        #     "type": "subscribe",
-        #     "product_ids": [
-        #         "ETH-USD",
-        #         "ETH-EUR"
-        #     ],
-        #     "channels": [
-        #         "level2"
-        #     ]
-        # }
-        # for pair in pairs: #subscribing to all active pairs
-        #     print("Subscribing to pair: "+pair)
+        requestArticles = requests.get("https://api.gdax.com/products")#fetching all the active product ids from gdax
+        pairs = requestArticles.json()
+        prodIds = []
+        for pair in pairs:# contructing list of the productids to be subscribed
+            # print(pair['id'])
+            prodIds.append(pair['id'])
+            print("Subscribing to productids: "+pair['id'])
         request = {}
         request['type'] = 'subscribe'
-        request['product_ids'] = ["ETH-USD","ETH-EUR"]
+        request['product_ids'] = prodIds
         request['channels'] = ["level2"]
         json_request = json.dumps(request)
-        print(json_request)
+        # print(json_request)
         self.ws.write_message(json_request)
 
     def keep_alive(self):#if connection goes down
@@ -140,36 +136,94 @@ class Client(object):
             # self.ws.write_message("keep alive")#check this part of the code for heartbeat or use pass
 
 
+#### Helper class for passing data to the local websocket server
 class BitfinexData(object):
     def __init__(self, data, channelIdVal, WS):
         self.data = data
-        self.channelIdVal = channelIdVal
-        # self.url = "ws://localhost:8888/noble-markets-realtime-order-book"
+        self.channelIdVal = channelIdVal#for remapping channel id to pair name
         self.WS = WS
-        self.ioloop = IOLoop()
-        # 
         self.parseData()
-        # self.ioloop.start()
+
     @gen.coroutine
     def parseData(self):
-        self.payload = {
-            'place': "bitfinex",
-            'chanId':self.channelIdVal[self.data[0]],
-            'data': self.data[1]
-        }
-        # # print ("Establishing connection to "+self.url)
-        # try:
-        #     self.ws = yield websocket_connect(self.url)
-        # except:
-        #     print ("connection error "+self.url)
-        # else:
-        #     # print ("connected to "+self.url)
-        self.WS.write_message(json.dumps(self.payload))
+        try: 
+            #creating payload for the Bitfine
+            self.packet = []
+            print(self.data)
+            # print(len(self.data[1]))
+            if len(self.data[1])>3:# only for snapshots, 3 becoz the list size for update has only three elements
+                for item in self.data[1]:
+                    payload = {
+                        'exchange': "Bitfinex",
+                        'chanId':self.channelIdVal[self.data[0]],
+                        'price':item[0],
+                        'count':item[1],
+                        'amount':item[2]
+                    }
+                    if item[2] >= 0 and item[1]!=0:#deciding for bid or ask, also if count equlas zero then not storing that msg
+                        payload['transactionType'] = 'bid'
+                    elif item[2] <0 and item[1]!=0:
+                        payload['transactionType'] = 'ask'
+                    self.packet.append(payload)
+                    print(payload)
+            elif len(self.data[1])==3:#is updates are coming, excluding heartbeat
+                payload = {
+                    'exchange': "Bitfinex",
+                    'chanId':self.channelIdVal[self.data[0]],
+                    'price':self.data[1][0],
+                    'count':self.data[1][1],
+                }
+                if self.data[1][2] >= 0:#deciding for bid or ask
+                    payload['transactionType'] = 'bid'
+                else:
+                    payload['transactionType'] = 'ask'
+                self.packet.append(payload)
+                print(payload)
+            #sending the packet to local websocket server
+            self.WS.write_message(json.dumps(self.packet))
             # self.ws.close()
-            # self.ioloop.stop()
+        except:
+            print("Error happend while sending the bitfinex data to the local websocket server", sys.exc_info()[0])
 
 
+class GdaxData(object):
+    def __init__(self, data, WS):
+        self.data = data
+        self.WS = WS
+        self.parseData()
 
-# if __name__ == "__main__":
-    # client = Client("wss://api.bitfinex.com/ws", 5, 1)
-    # client = Client("wss://ws-feed.gdax.com", 5, 2)
+    @gen.coroutine
+    def parseData(self):
+        try: 
+            #creating payload for the Gdax
+            if 'product_id' in self.data:#rejecting other messages if they dont have product ids
+                if self.data['type'] == 'snapshot':#snapshot
+                    if 'bids' in self.data:
+                        self.payload = {
+                            'exchange': "Gdax",
+                            'type': 'snapshot',
+                            'prodId': self.data['product_id'].replace('-', ''),
+                            'transactionType': 'bid',
+                            'data': self.data['bids']
+                        }
+                    else:
+                        self.payload = {
+                            'exchange': "Gdax",
+                            'type': 'snapshot',
+                            'prodId': self.data['product_id'].replace('-', ''),
+                            'transactionType': 'ask',
+                            'data': self.data['bids']
+                        }
+                else:#l2update
+                    self.payload = {
+                        'exchange': "Gdax",
+                        'type': 'l2update',
+                        'prodId': self.data['product_id'].replace('-', ''),
+                        'data': self.data['changes']
+                    }
+                print(self.payload)
+                self.WS.write_message(json.dumps(self.payload))
+            else:
+                pass
+        except:
+            print("Error happend while sending the bitfinex data to the local websocket server", sys.exc_info()[0])
