@@ -29,14 +29,21 @@ class HomePage(tornado.web.RequestHandler):
 class SendRealTimeUpdates(websocket.WebSocketHandler):
     def check_origin(self, origin):
         return True
-
+    connections = set()
     def open(self):
-        logging.info("A client connected.")
+        # logging.info("A client connected.")
+        self.write_message("A client connected.")
+        self.connections.add(self)
+        print("Active Connections to local Websocket server are  "+str(len(self.connections)))
 
     def on_close(self):
-        logging.info("A client disconnected.")
+        # logging.info("A client disconnected.")
+        self.connections.remove(self)
     def on_message(self, message):
-        logging.info("message: {}".format(message))
+    	# pass
+        # logging.info("message: {}".format(message))
+        [con.write_message(message) for con in self.connections]
+        # self.write_message(message)
     # def get(self):
     #     print("This is the snapshot data")
     #     self.write("Inside snapshot data")

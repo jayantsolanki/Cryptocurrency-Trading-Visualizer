@@ -10,14 +10,27 @@ import requests
 class Client(object):
     def __init__(self, url, timeout, mode):
         self.url = url
+        self.URL = "ws://localhost:8888/noble-markets-realtime-order-book" #local websocket server
         self.timeout = timeout
         self.ioloop = IOLoop()
         self.ws = None
         self.mode = mode#1 for bitfinex, 2 for gdax
         self.channelIdVal = {}
+        self.connectLocal()#create connection to local WebSocket Server
         self.connect()
         PeriodicCallback(self.keep_alive, 20000, io_loop=self.ioloop).start()
         self.ioloop.start()
+
+
+    @gen.coroutine
+    def connectLocal(self): # for resuing sma ewebscoket connection, so as to prevent creation of multiple redundant connections
+        print ("Establishing connection to Local Websocket server "+self.url)
+        try:
+            self.WS = yield websocket_connect(self.URL)
+        except:
+            print ("connection error "+self.URL)
+        else:
+            pass
 
     @gen.coroutine
     def connect(self):
@@ -31,10 +44,11 @@ class Client(object):
             self.run()
             # code for subscribing goes here
             if self.mode==1:
-                self.bitfinexSubscribe()
-            elif self.mode==2:
-                # self.gdaxSubscribe()
+                # self.bitfinexSubscribe()#comment this line for debugging
                 pass
+            elif self.mode==2:
+                self.gdaxSubscribe()
+                # pass
             # elif self.mode==0:
             #     print ("you have entered the dungeon, exit now!!!!")
             #     self.ioloop.stop()
@@ -53,7 +67,7 @@ class Client(object):
                 break
             else:
                 message = json.loads(msg)#converting the response into json
-                if self.mode == 1:
+                if self.mode == 1:# for bitfinex
                     # msgs for bitfinex
                     if 'event' in message:
                         if message['event'] == "subscribed":
@@ -64,10 +78,17 @@ class Client(object):
                             # print(self.channelIdVal)
                     else:
                         # print(message)
-                        BitfinexData(message, self.channelIdVal)
+                        MSG = yield self.WS.read_message()
+                        if MSG is None:#can be replaced by while loop
+                            print ("connection closed for "+self.URL+ " trying again")
+                            self.connectLocal()
+                        else:
+                            BitfinexData(message, self.channelIdVal, self.WS)
+                            # pass #discard that message, badluck
                         # pass
-                elif self.mode == 2:
-                    pass
+                elif self.mode == 2:#for GDAX
+                    print(message)
+                    # pass
 
 
     def bitfinexSubscribe(self):
@@ -88,12 +109,28 @@ class Client(object):
 
 
     def gdaxSubscribe(self):
+        # requestArticles = requests.get("https://api.bitfinex.com/v1/symbols")#fetching all the active pairs
+        # pairs = requestArticles.json()
+        # print(pairs)
+        # {
+        #     "type": "subscribe",
+        #     "product_ids": [
+        #         "ETH-USD",
+        #         "ETH-EUR"
+        #     ],
+        #     "channels": [
+        #         "level2"
+        #     ]
+        # }
+        # for pair in pairs: #subscribing to all active pairs
+        #     print("Subscribing to pair: "+pair)
         request = {}
-        request['event'] = 'subscribe'
-        request['channel'] = 'BTCUSD'
+        request['type'] = 'subscribe'
+        request['product_ids'] = ["ETH-USD","ETH-EUR"]
+        request['channels'] = ["level2"]
         json_request = json.dumps(request)
         print(json_request)
-        # self.ws.write_message(json_request)
+        self.ws.write_message(json_request)
 
     def keep_alive(self):#if connection goes down
         if self.ws is None:
@@ -104,50 +141,32 @@ class Client(object):
 
 
 class BitfinexData(object):
-    def __init__(self, data, channelIdVal):
+    def __init__(self, data, channelIdVal, WS):
         self.data = data
         self.channelIdVal = channelIdVal
-        self.url = "ws://localhost:8888/noble-markets-realtime-order-book"
+        # self.url = "ws://localhost:8888/noble-markets-realtime-order-book"
+        self.WS = WS
         self.ioloop = IOLoop()
+        # 
         self.parseData()
-        self.ioloop.start()
-# self.channelIdVal[self.data[0]]
+        # self.ioloop.start()
     @gen.coroutine
     def parseData(self):
-        # pass
         self.payload = {
             'place': "bitfinex",
             'chanId':self.channelIdVal[self.data[0]],
             'data': self.data[1]
         }
-
-        print ("Establishing connection to "+self.url)
-        try:
-            self.ws = yield websocket_connect(self.url)
-        except:
-            print ("connection error "+self.url)
-        else:
-            print ("connected to "+self.url)
-            self.ws.write_message(json.dumps(self.payload))
-            self.ws.close()
+        # # print ("Establishing connection to "+self.url)
+        # try:
+        #     self.ws = yield websocket_connect(self.url)
+        # except:
+        #     print ("connection error "+self.url)
+        # else:
+        #     # print ("connected to "+self.url)
+        self.WS.write_message(json.dumps(self.payload))
+            # self.ws.close()
             # self.ioloop.stop()
-
-        # # print(jay[1])
-        # # data = {
-        # #     'payload[]': jay[1],
-        # #     'chanId' : jay[0]
-        # # }
-        # # print(jay[1])
-        # payload = {'chanId': jay[1][0] 
-        #    # 'favefood': ['raw donuts', 'free donuts']
-        # }
-        # r = requests.post('http://localhost:8888/noble-markets-order-book-snapshot', data=jay[1][0], contentType= 'application/x-www-form-urlencoded')
-        # print(jay[1][0])
-        # print ("Sending the data Data.....")
-        # print(self.data)
-        # client = Client("ws://localhost:8888/noble-markets-realtime-order-book", 5, 0)
-
-        # self.ioloop.stop()
 
 
 
