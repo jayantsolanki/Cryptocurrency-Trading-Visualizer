@@ -41,7 +41,7 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
         self.connections.remove(self)
     def on_message(self, message):
     	# pass
-        # logging.info("message: {}".format(message))
+        logging.info("message: {}".format(message))
         [con.write_message(message) for con in self.connections]
         # self.write_message(message)
     # def get(self):

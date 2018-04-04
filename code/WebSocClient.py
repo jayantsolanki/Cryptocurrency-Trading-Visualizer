@@ -46,9 +46,9 @@ class Client(object):
             # code for subscribing goes here
             if self.mode==1:
                 self.bitfinexSubscribe()#comment this line for debugging
-                # pass
+                pass
             elif self.mode==2:
-                # self.gdaxSubscribe()
+                self.gdaxSubscribe()
                 pass
             # elif self.mode==0:
             #     print ("you have entered the dungeon, exit now!!!!")
@@ -120,6 +120,7 @@ class Client(object):
             # print(pair['id'])
             prodIds.append(pair['id'])
             print("Subscribing to productids: "+pair['id'])
+            # break
         request = {}
         request['type'] = 'subscribe'
         request['product_ids'] = prodIds
@@ -149,41 +150,41 @@ class BitfinexData(object):
         try: 
             #creating payload for the Bitfine
             self.packet = []
-            print(self.data)
+            # print(self.data)
             # print(len(self.data[1]))
-            if len(self.data[1])>3:# only for snapshots, 3 becoz the list size for update has only three elements
+            if len(self.data[1]) > 3: #only for snapshots, 3 becoz the list size for update has only three elements
                 for item in self.data[1]:
                     payload = {
                         'exchange': "Bitfinex",
-                        'chanId':self.channelIdVal[self.data[0]],
+                        'pairname':self.channelIdVal[self.data[0]],
                         'price':item[0],
-                        'count':item[1],
-                        'amount':item[2]
+                        'count':item[1]
+                        # 'amount':item[2]
                     }
-                    if item[2] >= 0 and item[1]!=0:#deciding for bid or ask, also if count equlas zero then not storing that msg
+                    if item[2] >= 0: #deciding for bid or ask, also if count equlas zero then not storing that msg
                         payload['transactionType'] = 'bid'
-                    elif item[2] <0 and item[1]!=0:
+                    elif item[2] < 0:
                         payload['transactionType'] = 'ask'
                     self.packet.append(payload)
-                    print(payload)
-            elif len(self.data[1])==3:#is updates are coming, excluding heartbeat
+                    # print(payload)
+            elif len(self.data[1]) == 3: #is updates are coming, excluding heartbeat
                 payload = {
                     'exchange': "Bitfinex",
-                    'chanId':self.channelIdVal[self.data[0]],
+                    'pairname':self.channelIdVal[self.data[0]],
                     'price':self.data[1][0],
                     'count':self.data[1][1],
                 }
                 if self.data[1][2] >= 0:#deciding for bid or ask
                     payload['transactionType'] = 'bid'
-                else:
+                elif self.data[1][2] < 0:
                     payload['transactionType'] = 'ask'
                 self.packet.append(payload)
-                print(payload)
+                # print(payload)
             #sending the packet to local websocket server
             self.WS.write_message(json.dumps(self.packet))
             # self.ws.close()
         except:
-            print("Error happend while sending the bitfinex data to the local websocket server", sys.exc_info()[0])
+            print("Error happened while sending the bitfinex data to the local websocket server", sys.exc_info()[0])
 
 
 class GdaxData(object):
@@ -196,33 +197,47 @@ class GdaxData(object):
     def parseData(self):
         try: 
             #creating payload for the Gdax
-            if 'product_id' in self.data:#rejecting other messages if they dont have product ids
+            self.packet = []
+            if 'type' in self.data:#rejecting other messages if they dont have product ids
                 if self.data['type'] == 'snapshot':#snapshot
-                    if 'bids' in self.data:
-                        self.payload = {
-                            'exchange': "Gdax",
-                            'type': 'snapshot',
-                            'prodId': self.data['product_id'].replace('-', ''),
-                            'transactionType': 'bid',
-                            'data': self.data['bids']
-                        }
-                    else:
-                        self.payload = {
-                            'exchange': "Gdax",
-                            'type': 'snapshot',
-                            'prodId': self.data['product_id'].replace('-', ''),
-                            'transactionType': 'ask',
-                            'data': self.data['bids']
-                        }
-                else:#l2update
-                    self.payload = {
-                        'exchange': "Gdax",
-                        'type': 'l2update',
-                        'prodId': self.data['product_id'].replace('-', ''),
-                        'data': self.data['changes']
-                    }
-                print(self.payload)
-                self.WS.write_message(json.dumps(self.payload))
+                    if 'bids' in self.data:#get values in bid
+                        for item in self.data['bids']:
+                            payload = {
+                                'exchange': "Gdax",
+                                'pairname':self.data['product_id'].replace('-', ''),
+                                'price':float(item[0]),
+                                'count':float(item[1]),
+                                'transactionType': 'bid'
+                            }
+                            self.packet.append(payload)
+                    # print(payload)
+                    if 'asks' in self.data:#get values in ask
+                        for item in self.data['asks']:
+                            if float(item[1])!=0:
+                                payload = {
+                                    'exchange': "Gdax",
+                                    'pairname':self.data['product_id'].replace('-', ''),
+                                    'price':float(item[0]),
+                                    'count':float(item[1]),
+                                    'transactionType': 'ask'
+                                }
+                                self.packet.append(payload)
+                elif self.data['type'] == 'l2update':
+                    for item in self.data['changes']:
+                            if float(item[2])!=0:#bypassing values with count equals zero
+                                payload = {
+                                    'exchange': "Gdax",
+                                    'pairname':self.data['product_id'].replace('-', ''),
+                                    'price':float(item[1]),
+                                    'count':float(item[2]),
+                                }
+                                if item[0] == 'sell':
+                                    payload['transactionType'] = 'ask'
+                                elif item[0] == 'buy':
+                                    payload['transactionType'] = 'bid'
+                                self.packet.append(payload)
+                # print(self.packet)
+                self.WS.write_message(json.dumps(self.packet))
             else:
                 pass
         except:
