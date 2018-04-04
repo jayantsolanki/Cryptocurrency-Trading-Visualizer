@@ -60,6 +60,7 @@ class MysqlDriver(object):
 		else:
 			pass
 
+# method for allowing user to filter the snapshot
 	def selectData(self, params, arguments):
 		# chanId = arguments("exchange")
 		request = json.dumps({ k: arguments(k) for k in params })
@@ -75,6 +76,8 @@ class MysqlDriver(object):
 			# print(query)
 		elif 'exchange' in request:
 			query = query.where(self.orderBook.c.exchange == request['exchange'])
+		# else: #default snapshot, when user lands on the website
+			
 			
 		if 'numRows' in request:
 			numRows = int(request['numRows'])
