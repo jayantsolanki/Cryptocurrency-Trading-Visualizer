@@ -60,12 +60,35 @@ class MysqlDriver(object):
 		else:
 			pass
 
-	def selectData(self, size = 200):
+	def selectData(self, params, arguments):
+		# chanId = arguments("exchange")
+		request = json.dumps({ k: arguments(k) for k in params })
+		request = json.loads(request)
 		query = self.orderBook.select()
-		# query = query.where(self.orderBook.c.id==100)
-		query = query.order_by("ASC")
-		query = query.limit(20)
-		print(query)
-		# result = self.db.execute(query)
-		# for row in result:
-		#     print (row)
+		numRows = 50 #default number of rows to be fetched unless specified
+		if 'price_greater_than' in request:
+			query = query.where(self.orderBook.c.price > float(request['price_greater_than']))
+			# print(query)
+
+		elif 'pair' in request:
+			query = query.where(self.orderBook.c.pairname == request['pair'])
+			# print(query)
+		elif 'exchange' in request:
+			query = query.where(self.orderBook.c.exchange == request['exchange'])
+			
+		if 'numRows' in request:
+			numRows = int(request['numRows'])
+		query = query.order_by(desc(self.orderBook.c.id)) # for snapshot, recent rows
+		query = query.limit(numRows)
+		result = self.db.execute(query)
+		packet = []
+		for row in result:
+			payload = {
+				'transactionType': row.transactionType,
+				'price' : float(row.price),
+				'count' : float(row.count),
+				'exchange' : row.exchange,
+				'pairname' : row.pairname
+			}
+			packet.append(payload)
+		return (json.dumps(packet))

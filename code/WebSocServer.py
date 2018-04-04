@@ -53,38 +53,38 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
 
 class SendSnapshot(tornado.web.RequestHandler):
     @web.asynchronous
-    def get(self):
-        self.db = MysqlDriver(DATABASE.host,DATABASE.username, DATABASE.password, DATABASE.dbname, DATABASE.tablename, False) # connect to MySql database server
-        self.db.selectData()
-        print("This is the snapshot data")
-        self.write("Inside snapshot data")
-        # self.finish()
-        # self.render("Hello World")
-        # self.finish()
-        # id = self.get_argument("id")
-        # chanId = self.get_argument('data')
-        # # payload = self.get_argument("payload")
-        # payload = json.dumps(chanId)
-        # # chanId = value[0]
-        # data = value[1]
-        # self.payload =  self.get_argument("payload[]")
-        # print(self.payload)
-        # print(self.get_argument("chanId"))
-        print("\n")
-        self.finish()
-        # print(payload)
-        # flat_list = [for item in payload]
-        # for item in payload:
-        #     print(item)
-        # self.finish()
-        # data = {"id": id, "value" : value}
-        # data = json.dumps(data)
-        # for c in cl:
-        #     c.write_message(data)
+    # def get(self):
+    #     self.db = MysqlDriver(DATABASE.host,DATABASE.username, DATABASE.password, DATABASE.dbname, DATABASE.tablename, False) # connect to MySql database server
+    #     self.db.selectData()
+    #     print("This is the snapshot data")
+    #     self.write("Inside snapshot data")
+    #     # self.finish()
+    #     # self.render("Hello World")
+    #     # self.finish()
+    #     # id = self.get_argument("id")
+    #     # chanId = self.get_argument('data')
+    #     # # payload = self.get_argument("payload")
+    #     # payload = json.dumps(chanId)
+    #     # # chanId = value[0]
+    #     # data = value[1]
+    #     # self.payload =  self.get_argument("payload[]")
+    #     # print(self.payload)
+    #     # print(self.get_argument("chanId"))
+    #     print("\n")
+    #     self.finish()
+    #     # print(payload)
+    #     # flat_list = [for item in payload]
+    #     # for item in payload:
+    #     #     print(item)
+    #     # self.finish()
+    #     # data = {"id": id, "value" : value}
+    #     # data = json.dumps(data)
+    #     # for c in cl:
+    #     #     c.write_message(data)
     def post(self):
-        chanId = self.get_argument("chanId")
-        # passwd = self.get_argument("password")
-        print(chanId)
+        self.db = MysqlDriver(DATABASE.host,DATABASE.username, DATABASE.password, DATABASE.dbname, DATABASE.tablename, False) # connect to MySql database server
+        self.queryResult = self.db.selectData(self.request.arguments, self.get_argument)
+        self.write(self.queryResult)
         self.finish()
         # self.write("Your username is %s and password is %s" % (user, passwd))
 
