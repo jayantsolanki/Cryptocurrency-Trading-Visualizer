@@ -35,10 +35,11 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
         self.connections.add(self)
         if len(self.connections) == 1:
             try:
-                self.db = MysqlDriver(True) # connect to MySql database server
-                self.createDatabase()
+                self.db = MysqlDriver("localhost","root", "jayant123","Trading",False) # connect to MySql database server
+                # self.createDatabase()
             except:
-                print("Database connectivity error")
+                print("Database connectivity warning")
+            self.db.insertData()
         print("Active Connections to local Websocket server are  "+str(len(self.connections)))
 
     def on_close(self):
