@@ -47,7 +47,7 @@ class Client(object):
             if self.mode==1:
                 self.bitfinexSubscribe()#comment this line for debugging
                 pass
-            elif self.mode==22:
+            elif self.mode==2:
                 self.gdaxSubscribe()
                 pass
             # elif self.mode==0:
@@ -65,7 +65,7 @@ class Client(object):
             if msg is None:
                 print ("connection closed for "+self.url)
                 self.ws = None
-                break
+                # break
             else:
                 message = json.loads(msg)#converting the response into json
                 if self.mode == 1:# for bitfinex
@@ -110,7 +110,7 @@ class Client(object):
             json_request = json.dumps(request)
             # print(json_request)
             self.ws.write_message(json_request)
-            break
+            # break
 
 
     def gdaxSubscribe(self):
@@ -121,7 +121,7 @@ class Client(object):
             # print(pair['id'])
             prodIds.append(pair['id'])
             print("Subscribing to productids: "+pair['id'])
-            # break
+            break
         request = {}
         request['type'] = 'subscribe'
         request['product_ids'] = prodIds

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from config.config import *
 import logging
 import tornado.escape
 import tornado.ioloop
@@ -33,13 +33,12 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
         # logging.info("A client connected.")
         self.write_message("A client connected.")
         self.connections.add(self)
-        if len(self.connections) == 1:
-            try:
-                self.db = MysqlDriver("localhost","root", "jayant123","Trading",False) # connect to MySql database server
-                # self.createDatabase()
-            except:
-                print("Database connectivity warning")
-            self.db.insertData()
+        # if len(self.connections) == 1:
+        # try:
+        self.db = MysqlDriver(DATABASE.host,DATABASE.username, DATABASE.password, DATABASE.dbname, DATABASE.tablename, False) # connect to MySql database server
+            # self.createDatabase()
+        # except:
+        #     print("Database connectivity warning")
         print("Active Connections to local Websocket server are  "+str(len(self.connections)))
 
     def on_close(self):
@@ -48,8 +47,13 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
 
     def on_message(self, message):
         # pass
-        logging.info("message: {}".format(message))
+        # logging.info("message: {}".format(message))
         [con.write_message(message) for con in self.connections]
+        # try:
+        message = json.loads(message)
+        self.db.insertData(message)
+        # except:
+            # print("I cannot handle so many data insertions")
         # self.write_message(message)
         # def get(self):
         #     print("This is the snapshot data")
@@ -95,6 +99,7 @@ class SendSnapshot(tornado.web.RequestHandler):
 
 
 def main():
+    # try:
     parse_command_line()
     app = tornado.web.Application(
         [
@@ -106,6 +111,9 @@ def main():
     app.listen(options.port)
     print("WebSocker Server Started on localhost port "+str(options.port))
     tornado.ioloop.IOLoop.current().start()
+    # except:
+    #     print("Server cannot be initialised")
+
 
 def ConnectBitfinex():
     client = Client("wss://api.bitfinex.com/ws/2", 5, 1)
@@ -114,6 +122,10 @@ def ConnectGdax():
     client = Client("wss://ws-feed.gdax.com", 5, 2)
 
 if __name__ == "__main__":
+    try:
+        dump = MysqlDriver(DATABASE.host,DATABASE.username, DATABASE.password, DATABASE.dbname, DATABASE.tablename, True)# if true, then create database and table
+    except:
+        print("Database already exists")
     thread = Thread(target = ConnectBitfinex)
     thread2 = Thread(target = ConnectGdax)
     thread3 = Thread(target = main)
