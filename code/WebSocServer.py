@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 import logging
 import tornado.escape
 import tornado.ioloop
@@ -8,6 +7,7 @@ import tornado.web
 import os.path
 import uuid
 from WebSocClient import Client
+from database.MysqlDriver import MysqlDriver
 from tornado.concurrent import Future
 from tornado import web, websocket
 from tornado.options import define, options, parse_command_line
@@ -15,7 +15,6 @@ from threading import Thread
 import json
 
 define("port", default=8888, help="run on the given port", type=int)
-
 
 class HomePage(tornado.web.RequestHandler):
     @web.asynchronous
@@ -34,26 +33,33 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
         # logging.info("A client connected.")
         self.write_message("A client connected.")
         self.connections.add(self)
+        if len(self.connections) == 1:
+            try:
+                self.db = MysqlDriver(True) # connect to MySql database server
+                self.createDatabase()
+            except:
+                print("Database connectivity error")
         print("Active Connections to local Websocket server are  "+str(len(self.connections)))
 
     def on_close(self):
-        # logging.info("A client disconnected.")
+        logging.info("A client disconnected.")
         self.connections.remove(self)
+
     def on_message(self, message):
-    	# pass
+        # pass
         logging.info("message: {}".format(message))
         [con.write_message(message) for con in self.connections]
         # self.write_message(message)
-    # def get(self):
-    #     print("This is the snapshot data")
-    #     self.write("Inside snapshot data")
-    #     self.finish()
+        # def get(self):
+        #     print("This is the snapshot data")
+        #     self.write("Inside snapshot data")
+        #     self.finish()
 
 
 class SendSnapshot(tornado.web.RequestHandler):
     @web.asynchronous
     def get(self):
-    	pass
+        pass
         # print("This is the snapshot data")
         # self.write("Inside snapshot data")
         # # self.finish()
