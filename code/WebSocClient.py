@@ -65,10 +65,10 @@ class Client(object):
             if msg is None:
                 print ("connection closed for "+self.url)
                 self.ws = None
-                # break
+                break
             else:
                 message = json.loads(msg)#converting the response into json
-                if self.mode == 1:# for bitfinex
+                if self.mode == 11:# for bitfinex
                     # msgs for bitfinex
                     if 'event' in message:
                         if message['event'] == "subscribed":
@@ -121,7 +121,7 @@ class Client(object):
             # print(pair['id'])
             prodIds.append(pair['id'])
             print("Subscribing to productids: "+pair['id'])
-            break
+            # break
         request = {}
         request['type'] = 'subscribe'
         request['product_ids'] = prodIds

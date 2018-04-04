@@ -46,41 +46,32 @@ class SendRealTimeUpdates(websocket.WebSocketHandler):
         self.connections.remove(self)
 
     def on_message(self, message):
-        # pass
         # logging.info("message: {}".format(message))
         [con.write_message(message) for con in self.connections]
-        # try:
         message = json.loads(message)
         self.db.insertData(message)
-        # except:
-            # print("I cannot handle so many data insertions")
-        # self.write_message(message)
-        # def get(self):
-        #     print("This is the snapshot data")
-        #     self.write("Inside snapshot data")
-        #     self.finish()
-
 
 class SendSnapshot(tornado.web.RequestHandler):
     @web.asynchronous
     def get(self):
-        pass
-        # print("This is the snapshot data")
-        # self.write("Inside snapshot data")
-        # # self.finish()
-        # # self.render("Hello World")
-        # # self.finish()
-        # # id = self.get_argument("id")
-        # # chanId = self.get_argument('data')
-        # # # payload = self.get_argument("payload")
-        # # payload = json.dumps(chanId)
-        # # # chanId = value[0]
-        # # data = value[1]
-        # # self.payload =  self.get_argument("payload[]")
-        # # print(self.payload)
-        # # print(self.get_argument("chanId"))
-        # print("\n")
+        self.db = MysqlDriver(DATABASE.host,DATABASE.username, DATABASE.password, DATABASE.dbname, DATABASE.tablename, False) # connect to MySql database server
+        self.db.selectData()
+        print("This is the snapshot data")
+        self.write("Inside snapshot data")
         # self.finish()
+        # self.render("Hello World")
+        # self.finish()
+        # id = self.get_argument("id")
+        # chanId = self.get_argument('data')
+        # # payload = self.get_argument("payload")
+        # payload = json.dumps(chanId)
+        # # chanId = value[0]
+        # data = value[1]
+        # self.payload =  self.get_argument("payload[]")
+        # print(self.payload)
+        # print(self.get_argument("chanId"))
+        print("\n")
+        self.finish()
         # print(payload)
         # flat_list = [for item in payload]
         # for item in payload:

@@ -37,7 +37,7 @@ class MysqlDriver(object):
 	def createTable(self):
 		if not self.db.dialect.has_table(self.db, 'users'):  # If table don't exist, Create.
 
-		    self.users = Table(self.tablename, self.metadata,
+		    self.table = Table(self.tablename, self.metadata,
 		        Column('id', Integer, primary_key=True),
 		        Column('transactionType', String(4)),
 		        Column('price', DECIMAL(64,10)),
@@ -47,7 +47,7 @@ class MysqlDriver(object):
 		        mysql_engine='InnoDB',
 		          mysql_charset='utf8'
 		    )
-		    self.users.create()
+		    self.table.create()
 
 	def insertData(self, data):
 		if len(data) > 0:
@@ -59,3 +59,13 @@ class MysqlDriver(object):
 				print("OMG!!! I failed at inserting data into the table")
 		else:
 			pass
+
+	def selectData(self, size = 200):
+		query = self.orderBook.select()
+		# query = query.where(self.orderBook.c.id==100)
+		query = query.order_by("ASC")
+		query = query.limit(20)
+		print(query)
+		# result = self.db.execute(query)
+		# for row in result:
+		#     print (row)
