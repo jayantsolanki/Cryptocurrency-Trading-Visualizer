@@ -19,7 +19,7 @@ This project has following features:
     * A REST endpoint which will return a snapshot of your order book, with the ability to take query parameters for filtering the order book
       * price_greater_than – Return orders where the price is greater than the number specified.
       * exchange – Return orders only from a certain exchange (i.e. exchange=bitfinex).
-      * Bonus Points – pair – Return orders for the pair specified (i.e. pair=BTCUSD).
+      * pair – Return orders for the pair specified (i.e. pair=BTCUSD).
 
 * **Front-End**
     * A small Angular 4 app that connects to the back-end.
@@ -28,14 +28,14 @@ This project has following features:
  
 ## Documentation
 ***
-Report and documentation can be found on this [Documentation](https://github.com/jayantsolanki/Cryptocurrency-Trading-Visualizer-Backend/tree/master/docs)
+Readme and SQL Model can be found on this [Documentation](https://github.com/jayantsolanki/Cryptocurrency-Trading-Visualizer/tree/master/docs)
 
 ## Folder Tree
 ***
-* [**docs**](https://github.com/jayantsolanki/Automated-Difficulty-prediction-for-Exam-Questions/tree/master/docs) contains documentation and paper
-* [**src**](https://github.com/jayantsolanki/Automated-Difficulty-prediction-for-Exam-Questions/tree/master/src) contains codes
-  * 611-Proj-Ques-Eval-Frontend: Contains the Website
-  * Python-Web-Server: Provide REST APIs solution for running Machine Learning Algorithm
+* [**docs**](https://github.com/jayantsolanki/Cryptocurrency-Trading-Visualizer/tree/master/docs) contains documentation and paper
+* [**code**](https://github.com/jayantsolanki/Cryptocurrency-Trading-Visualizer/tree/master/code) contains codes for Backend and Frontend
+  * Cryptocurrency-Trading-Visualizer-Front-end: Contains the Website
+  * PythonWebSocServer: Provide REST APIs solution for running WebSocket server and rest of the backend features
 
 ## Contributors
 ***
